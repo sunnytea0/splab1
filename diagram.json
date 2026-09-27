@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "author": "student",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-st-nucleo-c031c6",
+      "id": "nucleo",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot1",
+      "top": -80,
+      "left": 260,
+      "attrs": {
+        "value": "512"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 120,
+      "left": 300,
+      "attrs": {
+        "color": "green",
+        "xray": "1"
+      }
+    },
+    {
+      "type": "wokwi-mpu6050",
+      "id": "mpu1",
+      "top": -180,
+      "left": 300,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "nucleo:PA2", "$serialMonitor:RX", "", [] ],
+    [ "nucleo:PA3", "$serialMonitor:TX", "", [] ],
+
+    [ "pot1:VCC", "nucleo:3V3", "red", [] ],
+    [ "pot1:GND", "nucleo:GND.1", "black", [] ],
+    [ "pot1:SIG", "nucleo:PA0", "green", [] ],
+
+    [ "btn1:1.l", "nucleo:PB0", "blue", [] ],
+    [ "btn1:2.l", "nucleo:GND.1", "black", [] ],
+
+    [ "mpu1:VCC", "nucleo:3V3", "red", [] ],
+    [ "mpu1:GND", "nucleo:GND.1", "black", [] ],
+    [ "mpu1:SDA", "nucleo:PC14", "green", [] ],
+    [ "mpu1:SCL", "nucleo:PA9", "yellow", [] ]
+  ]
+}

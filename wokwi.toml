@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = 'build/LR1_.elf'
+elf = 'build/LR1_.elf'
