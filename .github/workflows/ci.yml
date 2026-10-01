@@ -1,0 +1,22 @@
+name: STM32 CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t stm32-dev -f docker/Dockerfile .
+
+      - name: Build firmware
+        run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace stm32-dev make
+
+      - name: Run host tests
+        run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace stm32-dev make test

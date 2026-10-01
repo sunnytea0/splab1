@@ -66,6 +66,20 @@ HEX = $(CP) -O ihex
 BIN = $(CP) -O binary -S
 
 ######################################
+# Host test toolchain
+######################################
+
+HOST_CC = gcc
+
+TEST_BUILD_DIR = $(BUILD_DIR)/tests
+TEST_TARGET = $(TEST_BUILD_DIR)/test_mpu6050
+
+HOST_CFLAGS = \
+-Wall \
+-Wextra \
+-std=c11
+
+######################################
 # CPU
 ######################################
 
@@ -139,7 +153,7 @@ ASM_OBJECTS = $(addprefix $(BUILD_DIR)/,$(ASM_SOURCES:.s=.o))
 OBJECTS = $(C_OBJECTS) $(ASM_OBJECTS)
 
 ######################################
-# Build
+# Firmware build
 ######################################
 
 all: \
@@ -166,6 +180,17 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf
 	$(BIN) $< $@
 
 ######################################
+# Host tests
+######################################
+
+test: $(TEST_TARGET)
+	$(TEST_TARGET)
+
+$(TEST_TARGET): tests/Src/test_mpu6050.c
+	@mkdir -p $(TEST_BUILD_DIR)
+	$(HOST_CC) $(HOST_CFLAGS) $< -o $@
+
+######################################
 # Clean
 ######################################
 
@@ -178,4 +203,4 @@ clean:
 
 -include $(C_OBJECTS:.o=.d)
 
-.PHONY: all clean
+.PHONY: all test clean
