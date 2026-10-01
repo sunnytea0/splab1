@@ -1,16 +1,23 @@
 #include "main.h"
+#include "app.h"
+
 #include <stdio.h>
 #include <stdint.h>
 
-/* Private variables ---------------------------------------------------------*/
+/* -------------------------------------------------------------------------- */
+/* Peripheral handles                                                         */
+/* -------------------------------------------------------------------------- */
 
 ADC_HandleTypeDef hadc1;
 I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
-/* Private function prototypes -----------------------------------------------*/
+/* -------------------------------------------------------------------------- */
+/* Prototypes                                                                 */
+/* -------------------------------------------------------------------------- */
 
 void SystemClock_Config(void);
+
 static void MX_GPIO_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_I2C1_Init(void);
@@ -22,10 +29,17 @@ static void MX_USART2_UART_Init(void);
 
 int _write(int fd, char *p, int n)
 {
-    HAL_UART_Transmit(&huart2, (uint8_t *)p, n, HAL_MAX_DELAY);
+    (void)fd;
+
+    HAL_UART_Transmit(
+        &huart2,
+        (uint8_t *)p,
+        (uint16_t)n,
+        HAL_MAX_DELAY
+    );
+
     return n;
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* Main                                                                       */
@@ -42,92 +56,19 @@ int main(void)
     MX_I2C1_Init();
     MX_USART2_UART_Init();
 
-    printf("\r\n");
-    printf("====================================\r\n");
-    printf("STM32C031C6 Wokwi test started\r\n");
-    printf("UART + ADC + GPIO + I2C\r\n");
-    printf("====================================\r\n");
-
-    /*
-     * MPU6050 normally uses 7-bit I2C address 0x68.
-     * STM32 HAL expects address shifted left by one bit.
-     */
-    uint8_t mpuReady = 0;
-
-    if (HAL_I2C_IsDeviceReady(
-            &hi2c1,
-            (0x68 << 1),
-            3,
-            100) == HAL_OK)
-    {
-        mpuReady = 1;
-        printf("MPU6050 detected at address 0x68\r\n");
-    }
-    else
-    {
-        printf("MPU6050 NOT FOUND\r\n");
-    }
+    App_Init(
+        &hi2c1,
+        &hadc1
+    );
 
     while (1)
     {
-        /* -------------------------------------------------------------- */
-        /* ADC / potentiometer                                            */
-        /* -------------------------------------------------------------- */
-
-        uint32_t adcValue = 0;
-
-        if (HAL_ADC_Start(&hadc1) == HAL_OK)
-        {
-            if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
-            {
-                adcValue = HAL_ADC_GetValue(&hadc1);
-            }
-
-            HAL_ADC_Stop(&hadc1);
-        }
-
-        /* -------------------------------------------------------------- */
-        /* GPIO / button                                                  */
-        /* -------------------------------------------------------------- */
-
-        GPIO_PinState buttonState =
-            HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
-
-        /* -------------------------------------------------------------- */
-        /* Re-check MPU6050                                               */
-        /* -------------------------------------------------------------- */
-
-        if (HAL_I2C_IsDeviceReady(
-                &hi2c1,
-                (0x68 << 1),
-                1,
-                20) == HAL_OK)
-        {
-            mpuReady = 1;
-        }
-        else
-        {
-            mpuReady = 0;
-        }
-
-        /* -------------------------------------------------------------- */
-        /* UART output                                                    */
-        /* -------------------------------------------------------------- */
-
-        printf(
-            "ADC = %lu | BUTTON = %d | MPU6050 = %s\r\n",
-            (unsigned long)adcValue,
-            (int)buttonState,
-            mpuReady ? "OK" : "NOT FOUND"
-        );
-
-        HAL_Delay(1000);
+        App_Run();
     }
 }
 
-
 /* -------------------------------------------------------------------------- */
-/* System Clock Configuration                                                 */
+/* System Clock                                                               */
 /* -------------------------------------------------------------------------- */
 
 void SystemClock_Config(void)
@@ -135,15 +76,25 @@ void SystemClock_Config(void)
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-    __HAL_FLASH_SET_LATENCY(FLASH_LATENCY_0);
+    __HAL_FLASH_SET_LATENCY(
+        FLASH_LATENCY_0
+    );
 
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV4;
+    RCC_OscInitStruct.OscillatorType =
+        RCC_OSCILLATORTYPE_HSI;
+
+    RCC_OscInitStruct.HSIState =
+        RCC_HSI_ON;
+
+    RCC_OscInitStruct.HSIDiv =
+        RCC_HSI_DIV4;
+
     RCC_OscInitStruct.HSICalibrationValue =
         RCC_HSICALIBRATION_DEFAULT;
 
-    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    if (HAL_RCC_OscConfig(
+            &RCC_OscInitStruct
+        ) != HAL_OK)
     {
         Error_Handler();
     }
@@ -167,12 +118,12 @@ void SystemClock_Config(void)
 
     if (HAL_RCC_ClockConfig(
             &RCC_ClkInitStruct,
-            FLASH_LATENCY_0) != HAL_OK)
+            FLASH_LATENCY_0
+        ) != HAL_OK)
     {
         Error_Handler();
     }
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* ADC1 Initialization                                                        */
@@ -248,12 +199,12 @@ static void MX_ADC1_Init(void)
 
     if (HAL_ADC_ConfigChannel(
             &hadc1,
-            &sConfig) != HAL_OK)
+            &sConfig
+        ) != HAL_OK)
     {
         Error_Handler();
     }
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* I2C1 Initialization                                                        */
@@ -261,7 +212,8 @@ static void MX_ADC1_Init(void)
 
 static void MX_I2C1_Init(void)
 {
-    hi2c1.Instance = I2C1;
+    hi2c1.Instance =
+        I2C1;
 
     hi2c1.Init.Timing =
         0x00402D41;
@@ -294,19 +246,20 @@ static void MX_I2C1_Init(void)
 
     if (HAL_I2CEx_ConfigAnalogFilter(
             &hi2c1,
-            I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+            I2C_ANALOGFILTER_ENABLE
+        ) != HAL_OK)
     {
         Error_Handler();
     }
 
     if (HAL_I2CEx_ConfigDigitalFilter(
             &hi2c1,
-            0) != HAL_OK)
+            0
+        ) != HAL_OK)
     {
         Error_Handler();
     }
 }
-
 
 /* -------------------------------------------------------------------------- */
 /* USART2 Initialization                                                      */
@@ -353,7 +306,6 @@ static void MX_USART2_UART_Init(void)
     }
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* GPIO Initialization                                                        */
 /* -------------------------------------------------------------------------- */
@@ -366,9 +318,6 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
-    /*
-     * PB0 -> button input
-     */
     GPIO_InitStruct.Pin =
         GPIO_PIN_0;
 
@@ -384,7 +333,6 @@ static void MX_GPIO_Init(void)
     );
 }
 
-
 /* -------------------------------------------------------------------------- */
 /* Error Handler                                                              */
 /* -------------------------------------------------------------------------- */
@@ -398,16 +346,15 @@ void Error_Handler(void)
     }
 }
 
-
 #ifdef USE_FULL_ASSERT
 
 void assert_failed(
     uint8_t *file,
-    uint32_t line)
+    uint32_t line
+)
 {
-    /*
-     * User implementation can be added here
-     */
+    (void)file;
+    (void)line;
 }
 
 #endif

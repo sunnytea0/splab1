@@ -35,6 +35,15 @@
       "top": -180,
       "left": 300,
       "attrs": {}
+    },
+    {
+      "type": "wokwi-logic-analyzer",
+      "id": "logic1",
+      "top": -180,
+      "left": 520,
+      "attrs": {
+        "channelNames": "SDA,SCL"
+      }
     }
   ],
   "connections": [
@@ -51,6 +60,9 @@
     [ "mpu1:VCC", "nucleo:3V3", "red", [] ],
     [ "mpu1:GND", "nucleo:GND.1", "black", [] ],
     [ "mpu1:SDA", "nucleo:PC14", "green", [] ],
-    [ "mpu1:SCL", "nucleo:PA9", "yellow", [] ]
+    [ "mpu1:SCL", "nucleo:PA9", "yellow", [] ],
+
+    [ "logic1:D0", "nucleo:PC14", "purple", [] ],
+    [ "logic1:D1", "nucleo:PA9", "orange", [] ]
   ]
 }
