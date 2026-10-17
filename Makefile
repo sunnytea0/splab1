@@ -16,6 +16,7 @@ BUILD_DIR = build
 C_SOURCES = \
 Core/Src/main.c \
 App/Src/app.c \
+App/Src/button.c \
 Devices/Src/mpu6050.c \
 Core/Src/stm32c0xx_it.c \
 Core/Src/stm32c0xx_hal_msp.c \
@@ -73,6 +74,7 @@ HOST_CC = gcc
 
 TEST_BUILD_DIR = $(BUILD_DIR)/tests
 TEST_TARGET = $(TEST_BUILD_DIR)/test_mpu6050
+TEST_BUTTON_TARGET = $(TEST_BUILD_DIR)/test_button
 
 HOST_CFLAGS = \
 -Wall \
@@ -183,8 +185,13 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf
 # Host tests
 ######################################
 
-test: $(TEST_TARGET)
+test: $(TEST_TARGET) $(TEST_BUTTON_TARGET)
 	$(TEST_TARGET)
+	$(TEST_BUTTON_TARGET)
+
+$(TEST_BUTTON_TARGET): tests/Src/test_button.c App/Src/button.c App/Inc/button.h
+	@mkdir -p $(TEST_BUILD_DIR)
+	$(HOST_CC) $(HOST_CFLAGS) -IApp/Inc tests/Src/test_button.c App/Src/button.c -o $@
 
 $(TEST_TARGET): tests/Src/test_mpu6050.c
 	@mkdir -p $(TEST_BUILD_DIR)

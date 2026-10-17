@@ -142,4 +142,12 @@ void SysTick_Handler(void)
 
 /* USER CODE BEGIN 1 */
 
+/**
+  * @brief EXTI lines 0 and 1 (PB0 button).
+  */
+void EXTI0_1_IRQHandler(void)
+{
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+}
+
 /* USER CODE END 1 */

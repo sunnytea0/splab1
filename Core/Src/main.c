@@ -318,19 +318,36 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
+    /* PB0: кнопка між PB0 і GND -> внутрішній pull-up, активний рівень 0,
+     * переривання EXTI0 по спадаючому фронту (момент натискання). */
     GPIO_InitStruct.Pin =
         GPIO_PIN_0;
 
     GPIO_InitStruct.Mode =
-        GPIO_MODE_INPUT;
+        GPIO_MODE_IT_FALLING;
 
     GPIO_InitStruct.Pull =
-        GPIO_NOPULL;
+        GPIO_PULLUP;
 
     HAL_GPIO_Init(
         GPIOB,
         &GPIO_InitStruct
     );
+
+    HAL_NVIC_SetPriority(EXTI0_1_IRQn, 2, 0);
+    HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
+}
+
+/* -------------------------------------------------------------------------- */
+/* EXTI callback (викликається з EXTI0_1_IRQHandler через HAL)                */
+/* -------------------------------------------------------------------------- */
+
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == GPIO_PIN_0)
+    {
+        App_OnButtonPressed(HAL_GetTick());
+    }
 }
 
 /* -------------------------------------------------------------------------- */

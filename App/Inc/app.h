@@ -10,4 +10,7 @@ void App_Init(
 
 void App_Run(void);
 
+/* Викликається з ISR (EXTI) при натисканні кнопки. */
+void App_OnButtonPressed(uint32_t now_ms);
+
 #endif

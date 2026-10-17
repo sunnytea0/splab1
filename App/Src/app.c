@@ -1,11 +1,19 @@
 #include "app.h"
 #include "mpu6050.h"
+#include "button.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
 static ADC_HandleTypeDef *app_adc = NULL;
 static MPU6050_Handle mpu6050;
+
+#define BUTTON_DEBOUNCE_MS   50U
+#define REPORT_PERIOD_MS   1000U
+
+static Button   button;
+static uint32_t last_report_ms = 0;
+static uint8_t  mode = 0;
 
 /* -------------------------------------------------------------------------- */
 /* ADC                                                                         */
@@ -34,9 +42,15 @@ static uint32_t App_ReadADC(void)
 /* Button                                                                      */
 /* -------------------------------------------------------------------------- */
 
-static GPIO_PinState App_ReadButton(void)
+/* Кнопка між PB0 і GND + pull-up: натиснута = 0. Повертає 1, якщо натиснута. */
+static int App_ReadButtonPressed(void)
 {
-    return HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
+    return (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0) == GPIO_PIN_RESET) ? 1 : 0;
+}
+
+void App_OnButtonPressed(uint32_t now_ms)
+{
+    (void)Button_OnFallingEdge(&button, now_ms);   /* ISR context */
 }
 
 /* -------------------------------------------------------------------------- */
@@ -151,12 +165,9 @@ static void App_SelfTest(void)
         (unsigned long)adc_value
     );
 
-    GPIO_PinState button_state =
-        App_ReadButton();
-
     printf(
-        "[SELFTEST] BUTTON STATE=%d OK\r\n",
-        (int)button_state
+        "[SELFTEST] BUTTON PRESSED=%d OK (EXTI0, falling edge)\r\n",
+        App_ReadButtonPressed()
     );
 
     printf("[SELFTEST] UART OK\r\n");
@@ -185,6 +196,8 @@ void App_Init(
 {
     app_adc = hadc;
 
+    Button_Init(&button, BUTTON_DEBOUNCE_MS);
+
     MPU6050_Attach(
         &mpu6050,
         hi2c
@@ -207,11 +220,35 @@ void App_Run(void)
 {
     MPU6050_Data data;
 
+    /* Подія кнопки обробляється одразу, а не раз на секунду. */
+    uint32_t presses = Button_TakeNewPresses(&button);
+
+    if (presses != 0U)
+    {
+        mode ^= (uint8_t)(presses & 1U);
+
+        printf(
+            "[EVENT] BUTTON PRESSED x%lu | MODE=%u\r\n",
+            (unsigned long)presses,
+            (unsigned)mode
+        );
+    }
+
+    /* Періодичний звіт без блокуючого HAL_Delay. */
+    uint32_t now = HAL_GetTick();
+
+    if ((uint32_t)(now - last_report_ms) < REPORT_PERIOD_MS)
+    {
+        return;
+    }
+
+    last_report_ms = now;
+
     uint32_t adc_value =
         App_ReadADC();
 
-    GPIO_PinState button_state =
-        App_ReadButton();
+    int button_pressed =
+        App_ReadButtonPressed();
 
     HAL_StatusTypeDef status =
         MPU6050_ReadData(
@@ -250,7 +287,7 @@ void App_Run(void)
             "GYRO_mdps X=%ld Y=%ld Z=%ld | "
             "TEMP_cC=%ld | "
             "ADC=%lu | "
-            "BUTTON=%d\r\n",
+            "BUTTON_PRESSED=%d | MODE=%u\r\n",
 
             (long)ax_mg,
             (long)ay_mg,
@@ -264,20 +301,20 @@ void App_Run(void)
 
             (unsigned long)adc_value,
 
-            (int)button_state
+            button_pressed,
+            (unsigned)mode
         );
     }
     else
     {
         printf(
             "MPU READ FAIL status=%d | "
-            "ADC=%lu | BUTTON=%d\r\n",
+            "ADC=%lu | BUTTON_PRESSED=%d | MODE=%u\r\n",
 
             (int)status,
             (unsigned long)adc_value,
-            (int)button_state
+            button_pressed,
+            (unsigned)mode
         );
     }
-
-    HAL_Delay(1000);
 }
