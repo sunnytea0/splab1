@@ -358,6 +358,17 @@ static void scen_finish(void)
     print_hist("btn_latency", &h_btn_lat);
     print_mem();
     printf("SCEN_DONE id=%u\r\n", (unsigned)scen_id);
+     /* Повернути задачі у стан за замовчуванням (інакше longop/autostats
+     * продовжують працювати після кінця сценарію). */
+    {
+        uint32_t t_now = perf_us();
+        ptask_set_period(&t_imu,       20000U,   t_now);
+        ptask_set_period(&t_adc,       100000U,  t_now);
+        ptask_set_period(&t_report,    1000000U, t_now);
+        ptask_set_period(&t_long,      0U,       t_now);
+        ptask_set_period(&t_autostats, 0U,       t_now);
+        long_dur_us = 0U;
+    }
 #ifdef AUTORUN_SCEN
     if (scen_id < 3U) { scen_start((uint8_t)(scen_id + 1U), 30U); }
 #endif
