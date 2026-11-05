@@ -1,5 +1,5 @@
 ##########################################################################################################################
-# STM32C031C6 - Lab 2
+# STM32C031C6 - Lab 3
 ##########################################################################################################################
 
 TARGET = LR1_
@@ -17,6 +17,8 @@ C_SOURCES = \
 Core/Src/main.c \
 App/Src/app.c \
 App/Src/button.c \
+App/Src/perf.c \
+App/Src/perf_stat.c \
 Devices/Src/mpu6050.c \
 Core/Src/stm32c0xx_it.c \
 Core/Src/stm32c0xx_hal_msp.c \
@@ -75,6 +77,10 @@ HOST_CC = gcc
 TEST_BUILD_DIR = $(BUILD_DIR)/tests
 TEST_TARGET = $(TEST_BUILD_DIR)/test_mpu6050
 TEST_BUTTON_TARGET = $(TEST_BUILD_DIR)/test_button
+TEST_PERF_TARGET = $(TEST_BUILD_DIR)/test_perf_stat
+
+# git-хеш збірки (потрапляє в банер і логи)
+GIT_HASH := $(shell git rev-parse --short HEAD 2>/dev/null || echo nogit)
 
 HOST_CFLAGS = \
 -Wall \
@@ -94,7 +100,8 @@ MCU = $(CPU) -mthumb
 
 C_DEFS = \
 -DUSE_HAL_DRIVER \
--DSTM32C031xx
+-DSTM32C031xx \
+-DGIT_HASH=\"$(GIT_HASH)\"
 
 ######################################
 # Includes
@@ -119,7 +126,8 @@ $(C_INCLUDES) \
 $(OPT) \
 -Wall \
 -fdata-sections \
--ffunction-sections
+-ffunction-sections \
+-fstack-usage
 
 ASFLAGS = $(MCU) $(OPT) -Wall -fdata-sections -ffunction-sections
 
@@ -143,7 +151,8 @@ LDFLAGS = $(MCU) \
 -T$(LDSCRIPT) \
 $(LIBS) \
 -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref \
--Wl,--gc-sections
+-Wl,--gc-sections \
+-Wl,--print-memory-usage
 
 ######################################
 # Objects
@@ -185,13 +194,18 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf
 # Host tests
 ######################################
 
-test: $(TEST_TARGET) $(TEST_BUTTON_TARGET)
+test: $(TEST_TARGET) $(TEST_BUTTON_TARGET) $(TEST_PERF_TARGET)
 	$(TEST_TARGET)
 	$(TEST_BUTTON_TARGET)
+	$(TEST_PERF_TARGET)
 
 $(TEST_BUTTON_TARGET): tests/Src/test_button.c App/Src/button.c App/Inc/button.h
 	@mkdir -p $(TEST_BUILD_DIR)
 	$(HOST_CC) $(HOST_CFLAGS) -IApp/Inc tests/Src/test_button.c App/Src/button.c -o $@
+
+$(TEST_PERF_TARGET): tests/Src/test_perf_stat.c App/Src/perf_stat.c App/Inc/perf_stat.h
+	@mkdir -p $(TEST_BUILD_DIR)
+	$(HOST_CC) $(HOST_CFLAGS) -IApp/Inc tests/Src/test_perf_stat.c App/Src/perf_stat.c -o $@
 
 $(TEST_TARGET): tests/Src/test_mpu6050.c
 	@mkdir -p $(TEST_BUILD_DIR)

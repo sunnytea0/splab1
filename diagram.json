@@ -42,7 +42,7 @@
       "top": -180,
       "left": 520,
       "attrs": {
-        "channelNames": "SDA,SCL"
+        "channelNames": "SDA,SCL,BTN,IMU,LONG,BTNRX"
       }
     }
   ],
@@ -63,6 +63,10 @@
     [ "mpu1:SCL", "nucleo:PA9", "yellow", [] ],
 
     [ "logic1:D0", "nucleo:PC14", "purple", [] ],
-    [ "logic1:D1", "nucleo:PA9", "orange", [] ]
+    [ "logic1:D1", "nucleo:PA9", "orange", [] ],
+    [ "logic1:D2", "nucleo:PB0", "blue", [] ],
+    [ "logic1:D3", "nucleo:PA6", "cyan", [] ],
+    [ "logic1:D4", "nucleo:PA7", "magenta", [] ],
+    [ "logic1:D5", "nucleo:PA8", "gray", [] ]
   ]
 }

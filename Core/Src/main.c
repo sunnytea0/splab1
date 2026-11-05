@@ -1,5 +1,6 @@
 #include "main.h"
 #include "app.h"
+#include "perf.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -47,6 +48,8 @@ int _write(int fd, char *p, int n)
 
 int main(void)
 {
+    stack_paint();   /* ЛР3: заповнити стек шаблоном (вимір глибини) */
+
     HAL_Init();
 
     SystemClock_Config();
@@ -56,9 +59,12 @@ int main(void)
     MX_I2C1_Init();
     MX_USART2_UART_Init();
 
+    perf_init();     /* ЛР3: мкс-лічильник + службові піни PA6..PA8 */
+
     App_Init(
         &hi2c1,
-        &hadc1
+        &hadc1,
+        &huart2
     );
 
     while (1)
